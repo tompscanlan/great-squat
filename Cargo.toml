@@ -7,5 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.4.1", features = ["derive"] }
+genawaiter = "0.99.1"
 spmc = "0.3.0"
 trust-dns-client = "0.23.0"
+# twistrs = { git = "https://github.com/haveibeensquatted/twistrs.git", branch = "main"}
