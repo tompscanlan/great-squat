@@ -2,7 +2,7 @@
 
 Someone is squatting on your domain name! Or are they?
 
-We'll never know... unless we check. And that's why great squat is here.
+We'll never know... unless we check. And that's why ***great squat*** is here.
 
 Give us a domain name, and we'll check to see what squatters might be out there.
 
