@@ -13,14 +13,14 @@ Resources:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
   # This is an API gateway associated with the getByIdFunction and putItemFunctions
-  # ApiGatewayApi:
-  #   Type: AWS::Serverless::Api
-  #   Properties:
-  #     StageName: Prod
-  #     Cors:
-  #       AllowMethods: "'OPTIONS, POST, GET'"
-  #       AllowHeaders: "'Content-Type'"
-  #       AllowOrigin: "'*'" #DO NOT USE THIS VALUE IN PRODUCTION - https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-cors.html
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'OPTIONS, POST, GET'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'" #DO NOT USE THIS VALUE IN PRODUCTION - https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-cors.html
 
   # This is a Lambda function config associated with the source code: get-by-id.js
   # getAllItemsFunction:
@@ -93,36 +93,40 @@ Resources:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
   # This is a Lambda function config associated with the source code: put-item.js
-  # putItemFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: backend/
-  #     Handler: src/handlers/put-item.putItemHandler
-  #     Runtime: nodejs18.x
-  #     Architectures:
-  #       - x86_64
-  #     MemorySize: 128
-  #     Timeout: 100
-  #     Description:
-  #       A simple example includes a HTTP post method to add one item to
-  #       a DynamoDB table.
-  #     Policies:
-  #       # Give Create/Read/Update/Delete Permissions to the RequestTable
-  #       - DynamoDBCrudPolicy:
-  #           TableName: !Ref RequestTable
-  #     Environment:
-  #       Variables:
-  #         SAMPLE_TABLE: !Ref RequestTable
-  #         # Make DynamoDB endpoint accessible as environment variable from function code during execution
-  #         ENDPOINT_OVERRIDE: ""
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /
-  #           Method: POST
-  #           RestApiId:
-  #             Ref: ApiGatewayApi
+  ScanRequestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/scan-request.putItemHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description:
+        A simple example includes a HTTP post method to add one item to
+        a DynamoDB table.
+      Policies:
+        # Give Create/Read/Update/Delete Permissions to the RequestTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RequestTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt MySqsQueue.QueueName
+        
+      Environment:
+        Variables:
+          SAMPLE_TABLE: !Ref RequestTable
+          SQS_QUEUE_URL: !GetAtt MySqsQueue.QueueUrl
+          # Make DynamoDB endpoint accessible as environment variable from function code during execution
+          ENDPOINT_OVERRIDE: ""
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /
+            Method: POST
+            RestApiId:
+              Ref: ApiGatewayApi
 
   # RustPutFunction:
   #   Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -162,6 +166,21 @@ Resources:
   #     ProvisionedThroughput:
   #       ReadCapacityUnits: 2
   #       WriteCapacityUnits: 2
+  MySQSQueueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/handle-queue-item.handler
+      Runtime: nodejs18.x
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt MySqsQueue.Arn
+            BatchSize: 10
+
+  MySqsQueue:
+    Type: AWS::SQS::Queue
 
   RequestTable:
     Type: AWS::DynamoDB::Table
@@ -305,3 +324,7 @@ Globals:
     Tracing: Active
   Api:
     TracingEnabled: true
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'content-type'"
+      AllowOrigin: "'*'"

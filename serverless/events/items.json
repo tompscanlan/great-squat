@@ -1,0 +1,13 @@
+{
+    "Records": [
+      {
+        "key1": "value1", "body": "body 1"
+      },
+      {
+        "key2": "value2", "body": "body 2"
+      },
+      {
+        "key3": "value3", "body": "body 3"
+      }
+    ]
+  }

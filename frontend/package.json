@@ -6,7 +6,11 @@
     "dev": "nuxt dev --port 5878",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "sam:build": "cd ..; sam build -u",
+    "sam:deploy": "cd ..; sam deploy",
+    "sam:bd": "npm run sam:build && npm run sam:deploy --no-confirm-changeset",
+    "deploy": "./deploy_frontend.sh"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
@@ -14,5 +18,8 @@
     "nuxt": "^3.7.0",
     "postcss": "^8.4.29",
     "tailwindcss": "^3.3.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.405.0"
   }
 }
