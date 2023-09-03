@@ -130,6 +130,26 @@ Resources:
             RestApiId:
               Ref: ApiGatewayApi
 
+  DomainPermutationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/domain-permutation.handler
+      Runtime: nodejs18.x
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ScanRequestsQueue.Arn
+            BatchSize: 1
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt DomainPermutationsQueue.QueueName
+
   # RustPutFunction:
   #   Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
   #   Metadata:
@@ -171,25 +191,6 @@ Resources:
 
   # works the incoming queue of scan requests to produce
   # permutations of the domain name into the next queue
-  DomainPermutationsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
-      Environment:
-        Variables:
-          SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/domain-permutation.handler
-      Runtime: nodejs18.x
-      Events:
-        MySQSEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt ScanRequestsQueue.Arn
-            BatchSize: 1
-      Policies:
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt DomainPermutationsQueue.QueueName
 
   DnsResolverFunction:
     Type: AWS::Serverless::Function

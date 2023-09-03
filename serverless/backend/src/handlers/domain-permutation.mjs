@@ -1,4 +1,5 @@
 
+import { BackupTypeFilter } from "@aws-sdk/client-dynamodb";
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 
 const body = { 'message': 'normal' };
@@ -23,22 +24,34 @@ export async function handler(event, context) {
         }
 
         event.Records.forEach(record => {
-            const { domain, body } = record;
+            const { messageAttributes } = record;
 
-            if (domain) {
-                const permutations = generatePermutations(domain);
-                permutations.forEach(async permutation => {
-                    console.log("permutation: ", permutation);
-                    const params = {
-                        MessageBody: permutation,
-                        QueueUrl: SQS_QUEUE_URL
-                    };
-                    const command = new SendMessageCommand(params);
-
-                    const resp = await sqsClient.send(command);
-                    console.log(resp);
-                });
+            if (!messageAttributes) {
+                throw new Error("No messageAttributes found");
             }
+
+            console.log("messageAttributes: ", messageAttributes);
+            const domain = messageAttributes.domain.stringValue
+
+
+            const permutations = generatePermutations(domain);
+            permutations.forEach(async permutation => {
+                console.log("permutation: ", permutation);
+                const params = {
+                    QueueUrl: SQS_QUEUE_URL,
+                    MessageAttributes: {
+                        domain: {
+                            DataType: "String",
+                            StringValue: permutation
+                        }
+                    },
+                    MessageBody: "domain permutations"
+                };
+                const command = new SendMessageCommand(params);
+
+                const resp = await sqsClient.send(command);
+                console.log(resp);
+            });
 
         });
 
@@ -49,11 +62,12 @@ export async function handler(event, context) {
 }
 
 function generatePermutations(domain) {
-    const permutations = [];
+    console.log("permutations on domain: ", domain);
+    let permutations = [];
     const domainParts = domain.split('.');
-    for (let i = 0; i < domainParts.length; i++) {
-        const subdomain = domainParts.slice(i).join('.');
-        permutations.push(subdomain);
-    }
+
+    permutations.push("a"+domain);
+    permutations.push(domainParts[0] + "s." + domainParts[1]);
+    
     return permutations;
 }
