@@ -14,7 +14,7 @@ if(ENDPOINT_OVERRIDE){
 else{
   
   ddbClient = new DynamoDBClient({});    // Use default values for DynamoDB endpoint
-  console.warn("No value for ENDPOINT_OVERRIDE provided for DynamoDB, using default");
+  console.info("No value for ENDPOINT_OVERRIDE provided for DynamoDB, using default");
 }
 
 const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);

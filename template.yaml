@@ -92,12 +92,14 @@ Resources:
   # Each Lambda function is defined by properties:
   # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
-  # This is a Lambda function config associated with the source code: put-item.js
+## Entry into the system from the web
+#  Receives ScanRequests from the web, 
+#  records them to db and the ScanRequestsQueue
   ScanRequestFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./serverless/backend/
-      Handler: src/handlers/scan-request.putItemHandler
+      Handler: src/handlers/scan-request.scanRequestHandler
       Runtime: nodejs18.x
       Architectures:
         - x86_64
@@ -111,12 +113,12 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref RequestTable
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt MySqsQueue.QueueName
+            QueueName: !GetAtt ScanRequestsQueue.QueueName
         
       Environment:
         Variables:
           SAMPLE_TABLE: !Ref RequestTable
-          SQS_QUEUE_URL: !GetAtt MySqsQueue.QueueUrl
+          SQS_QUEUE_URL: !GetAtt ScanRequestsQueue.QueueUrl
           # Make DynamoDB endpoint accessible as environment variable from function code during execution
           ENDPOINT_OVERRIDE: ""
       Events:
@@ -166,21 +168,93 @@ Resources:
   #     ProvisionedThroughput:
   #       ReadCapacityUnits: 2
   #       WriteCapacityUnits: 2
-  MySQSQueueFunction:
+
+  # works the incoming queue of scan requests to produce
+  # permutations of the domain name into the next queue
+  DomainPermutationsFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
       CodeUri: ./serverless/backend/
-      Handler: src/handlers/handle-queue-item.handler
+      Handler: src/handlers/domain-permutation.handler
       Runtime: nodejs18.x
       Events:
         MySQSEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt MySqsQueue.Arn
-            BatchSize: 10
+            Queue: !GetAtt ScanRequestsQueue.Arn
+            BatchSize: 1
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt DomainPermutationsQueue.QueueName
 
-  MySqsQueue:
+  DnsResolverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/resolve-domain.handler
+      Runtime: nodejs18.x
+      Description: Is triggered by the DomainPermutationsQueue and resolves the domain name into the the DB
+      Environment:
+        Variables:
+          RESOLVER_TABLE: !Ref ResolutionTable
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt DomainPermutationsQueue.Arn
+            BatchSize: 1
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ResolutionTable
+
+
+  # Holds incoming scan requests until they can be processed
+  # for permutations or scanned directly
+  ScanRequestsQueue:
     Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-scan-requests"
+      MessageRetentionPeriod: 172800
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  #  holds all permutations of domains that might exist
+  # in preparation for them to be scanned
+  DomainPermutationsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-domain-permutations"
+      MessageRetentionPeriod: 172800
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  # Holds domains that we want to scan and feeds a function that will
+  # check resolution and record results.
+  DnsResolverQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-dns-resolver"
+      MessageRetentionPeriod: 172800
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+
+  # lost messages flow here
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-dead-letter"
+      MessageRetentionPeriod: 1209600
 
   RequestTable:
     Type: AWS::DynamoDB::Table
@@ -202,6 +276,28 @@ Resources:
       Tags:
         - Key: foo
           Value: bar
+
+  ResolutionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+
+      AttributeDefinitions:
+        - AttributeName: "Domain"
+          AttributeType: "S"
+        - AttributeName: "Request Date"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "Domain"
+          KeyType: "HASH"
+        - AttributeName: "Request Date"
+          KeyType: "RANGE"
+      Tags:
+        - Key: foo
+          Value: bar
+
   # S3 Bucket to host single page app website
   WebSiteBucket:
     Type: AWS::S3::Bucket
