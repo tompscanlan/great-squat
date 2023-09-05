@@ -37,6 +37,7 @@ export async function handler(event, context) {
 
 
             const permutations = generatePermutations(domain);
+            permutations.push(domain);
 
             // permutations.forEach(async permutation => {
             for (let i = 0; i < permutations.length; i++) {

@@ -56,33 +56,6 @@ Resources:
             RestApiId:
               Ref: ApiGatewayApi
 
-  GetAllRequests:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/get-all-requests.getAllRequestsHandler
-      Runtime: nodejs18.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 5
-      Description:
-        Get all requests from the requests table for use in the web UI
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref RequestTable
-      Environment:
-        Variables:
-          REQUEST_TABLE: !Ref RequestTable
-      Events:
-        Api:
-          Type: Api 
-          Properties:
-            Path: /requests
-            Method: GET
-            RestApiId:
-              Ref: ApiGatewayApi
-
 
   DomainPermutationsFunction:
     Type: AWS::Serverless::Function
@@ -125,6 +98,62 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ResolutionTable
+
+  GetAllRequests:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/get-all-requests.getAllRequestsHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 5
+      Description:
+        Get all requests from the requests table for use in the web UI
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RequestTable
+      Environment:
+        Variables:
+          REQUEST_TABLE: !Ref RequestTable
+      Events:
+        Api:
+          Type: Api 
+          Properties:
+            Path: /requests
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+
+
+  GetAllResults:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/get-all-results.getAllResultsHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 5
+      Description:
+        Get all requests from the requests table for use in the web UI
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ResolutionTable
+      Environment:
+        Variables:
+          REQUEST_TABLE: !Ref ResolutionTable
+      Events:
+        Api:
+          Type: Api 
+          Properties:
+            Path: /results
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+
 
 
   # Holds incoming scan requests until they can be processed
@@ -259,6 +288,9 @@ Resources:
         DefaultRootObject: index.html
         HttpVersion: http2
         DefaultCacheBehavior:
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt CloudFrontIndexRewriteFunction.FunctionMetadata.FunctionARN
           AllowedMethods:
             - DELETE
             - GET
@@ -300,11 +332,35 @@ Resources:
         SigningBehavior: always
         SigningProtocol: sigv4
 
+  CloudFrontIndexRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      AutoPublish: true
+      FunctionCode: |-
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          // Check whether the URI is missing a file name.
+          if (uri.endsWith('/')) {
+              request.uri += 'index.html';
+          } 
+          // Check whether the URI is missing a file extension.
+          else if (!uri.includes('.')) {
+              request.uri += '/index.html';
+          }
+          return request;
+        }
+
+      FunctionConfig: 
+        Comment: "Rewrites index.html for single page app"
+        Runtime: cloudfront-js-1.0
+      Name: !Sub "${AWS::StackName}-redirectFunction"
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
       Name:
-        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+        Fn::Sub: "ApplicationInsights-SAM-${AWS::StackName}"
       ResourceQuery:
         Type: CLOUDFORMATION_STACK_1_0
 

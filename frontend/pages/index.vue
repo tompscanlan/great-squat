@@ -36,6 +36,8 @@ const checkForSquatters = () => {
         </p>
         <p>
             <RouterLink to="/requests">See all requests</RouterLink>
+            
+            <RouterLink to="/results">See all results</RouterLink>
         </p>
         <form class="w-full max-w-sm mt-4">
             <div class="md:flex md:items-center mb-6">
