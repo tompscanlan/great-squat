@@ -44,13 +44,13 @@ export async function handler(event, context) {
                 console.log("permutation: ", permutation);
                 const params = {
                     QueueUrl: SQS_QUEUE_URL,
-                    MessageAttributes: {
-                        domain: {
-                            DataType: "String",
-                            StringValue: permutation
-                        }
-                    },
-                    MessageBody: "domain permutations"
+                    // MessageAttributes: {
+                    //     domain: {
+                    //         DataType: "String",
+                    //         StringValue: permutation
+                    //     }
+                    // },
+                    MessageBody: "{\"domain\": \"" + permutation + "\"}"
                 };
 
                 // send to the queue

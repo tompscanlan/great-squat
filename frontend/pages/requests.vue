@@ -13,7 +13,7 @@ fetch(main)
     .then(response => response.json())
     .then(data => requests.value = data);
 
-
+    // Object.assign(state, data)
 </script>
 
 
@@ -24,7 +24,7 @@ fetch(main)
             <p> <RouterLink to="/" >Home</RouterLink></p>
         <ul>
             <li v-for="request in (requests as  record[])" :key="request.domain + request.date">                
-                {{ request.domain }}  {{  Date(request.date) }} 
+                {{ request.domain }}  {{  new Date(request.date * 1) }} 
             </li>
         </ul>
     </div>

@@ -47,7 +47,7 @@ export async function handler(event, context) {
         throw new Error("event.Records is not an array");
     }
 
-    
+
     let ddbClient = new DynamoDBClient({});
     const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, translateConfig);
 
@@ -55,22 +55,22 @@ export async function handler(event, context) {
         let record = event.Records[i];
         let response_record = record;
 
-        console.log("response record: ", response_record);
-        const { domain, body } = record;
+        console.log("initial response record: ", response_record);
+        const {  body } = record;
+        let domain = JSON.parse(body).domain;
         if (!domain) {
             response_record.error = "No domain found in record";
-        }
-        response_record.date = Date.now().toString();
+        } else {
+            response_record.date = Date.now().toString();
 
-        try {
-            response_record.resolves = await dns_resolver.resolve4(domain);
-        } catch (err) {
-            response_record.resolver_error = err;
-        }
+            try {
+                response_record.resolves = await dns_resolver.resolve4(domain);
+            } catch (err) {
+                response_record.resolver_error = err;
+            }
 
-        // DB update with results
-        try {
-            response_record.db_response = await ddbDocClient.send(new PutCommand(
+            // DB update with results
+            let command = new PutCommand(
                 {
                     TableName: RESOLVER_TABLE,
                     Item: {
@@ -81,16 +81,20 @@ export async function handler(event, context) {
                         error: response_record.error,
                     },
                 }
-            ));
-            console.log("db_response: ", response_record.db_response);
-        } catch (err) {
-            response_record.db_error = err;
-        }
+            )
 
+            console.log("command: ", command);
+            try {
+                response_record.db_response = await ddbDocClient.send(command);
+                console.log("db_response: ", response_record.db_response);
+            } catch (err) {
+                response_record.db_error = err;
+            }
+        }
         // record.db_record = db_record;;
         response.Records.push(response_record);
     }
-console.log("response: ", response);
+    console.log("final response: ", response);
     return response;
 }
 
