@@ -47,10 +47,16 @@ export async function handler(event, context) {
                     },
                     MessageBody: "domain permutations"
                 };
-                const command = new SendMessageCommand(params);
 
-                const resp = await sqsClient.send(command);
-                console.log(resp);
+                // send to the queue
+                try {
+                    console.log("sending to queue: ", params);
+                    const resp = await sqsClient.send(new SendMessageCommand(params));
+                    console.log("Sent to queue:", resp);
+                } catch (err) {
+                    console.error("Error sending to queue: ", err);
+                    throw err;
+                }
             });
 
         });
@@ -66,8 +72,8 @@ function generatePermutations(domain) {
     let permutations = [];
     const domainParts = domain.split('.');
 
-    permutations.push("a"+domain);
+    permutations.push("a" + domain);
     permutations.push(domainParts[0] + "s." + domainParts[1]);
-    
+
     return permutations;
 }

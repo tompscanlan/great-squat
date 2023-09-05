@@ -8,8 +8,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "sam:build": "cd ..; sam build -u",
-    "sam:deploy": "cd ..; sam deploy",
-    "sam:bd": "npm run sam:build && npm run sam:deploy --no-confirm-changeset",
+    "sam:deploy": "cd ..; sam deploy  --no-confirm-changeset",
+    "sam:bd": "npm run sam:build && npm run sam:deploy",
     "deploy": "./deploy_frontend.sh"
   },
   "devDependencies": {

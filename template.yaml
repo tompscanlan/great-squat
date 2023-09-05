@@ -20,77 +20,7 @@ Resources:
       Cors:
         AllowMethods: "'OPTIONS, POST, GET'"
         AllowHeaders: "'Content-Type'"
-        AllowOrigin: "'*'" #DO NOT USE THIS VALUE IN PRODUCTION - https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-cors.html
-
-  # This is a Lambda function config associated with the source code: get-by-id.js
-  # getAllItemsFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: backend/
-  #     Handler: src/handlers/get-all-items.getAllItemsHandler
-  #     Runtime: nodejs18.x
-  #     Architectures:
-  #       - x86_64
-  #     MemorySize: 128
-  #     Timeout: 100
-  #     Description:
-  #       A simple example includes a HTTP get method to get all items by
-  #       id from a DynamoDB table.
-  #     Policies:
-  #       # Give Create/Read/Update/Delete Permissions to the SampleTable
-  #       - DynamoDBCrudPolicy:
-  #           TableName: !Ref SampleTable
-  #     Environment:
-  #       Variables:
-  #         # Make table name accessible as environment variable from function code during execution
-  #         SAMPLE_TABLE: !Ref SampleTable
-  #         # Make DynamoDB endpoint accessible as environment variable from function code during execution
-  #         ENDPOINT_OVERRIDE: ""
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /
-  #           Method: GET
-  #           RestApiId:
-  #             Ref: ApiGatewayApi
-  # # Each Lambda function is defined by properties:
-  # # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # # This is a Lambda function config associated with the source code: get-by-id.js
-  # getByIdFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: backend/
-  #     Handler: src/handlers/get-by-id.getByIdHandler
-  #     Runtime: nodejs18.x
-  #     Architectures:
-  #       - x86_64
-  #     MemorySize: 128
-  #     Timeout: 100
-  #     Description:
-  #       A simple example includes a HTTP get method to get one item by
-  #       id from a DynamoDB table.
-  #     Policies:
-  #       # Give Create/Read/Update/Delete Permissions to the SampleTable
-  #       - DynamoDBCrudPolicy:
-  #           TableName: !Ref SampleTable
-  #     Environment:
-  #       Variables:
-  #         # Make table name accessible as environment variable from function code during execution
-  #         SAMPLE_TABLE: !Ref SampleTable
-  #         # Make DynamoDB endpoint accessible as environment variable from function code during execution
-  #         ENDPOINT_OVERRIDE: ""
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /{id}
-  #           Method: GET
-  #           RestApiId:
-  #             Ref: ApiGatewayApi
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+        AllowOrigin: "'*'" 
 
 ## Entry into the system from the web
 #  Receives ScanRequests from the web, 
@@ -104,23 +34,19 @@ Resources:
       Architectures:
         - x86_64
       MemorySize: 128
-      Timeout: 100
+      Timeout: 5
       Description:
-        A simple example includes a HTTP post method to add one item to
-        a DynamoDB table.
+        Receives ScanRequests from the web, and deposits them into a queue and a record in the db
       Policies:
         # Give Create/Read/Update/Delete Permissions to the RequestTable
         - DynamoDBCrudPolicy:
             TableName: !Ref RequestTable
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt ScanRequestsQueue.QueueName
-        
+            QueueName: !GetAtt ScanRequestsQueue.QueueName      
       Environment:
         Variables:
           SAMPLE_TABLE: !Ref RequestTable
           SQS_QUEUE_URL: !GetAtt ScanRequestsQueue.QueueUrl
-          # Make DynamoDB endpoint accessible as environment variable from function code during execution
-          ENDPOINT_OVERRIDE: ""
       Events:
         Api:
           Type: Api
@@ -130,13 +56,41 @@ Resources:
             RestApiId:
               Ref: ApiGatewayApi
 
+  GetAllRequests:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/get-all-requests.getAllRequestsHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 5
+      Description:
+        Get all requests from the requests table for use in the web UI
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RequestTable
+      Environment:
+        Variables:
+          REQUEST_TABLE: !Ref RequestTable
+      Events:
+        Api:
+          Type: Api 
+          Properties:
+            Path: /requests
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+
+
   DomainPermutationsFunction:
     Type: AWS::Serverless::Function
     Properties:
       Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
       Environment:
         Variables:
-          SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
+          SQS_QUEUE_URL: !GetAtt DnsResolverQueue.QueueUrl
       CodeUri: ./serverless/backend/
       Handler: src/handlers/domain-permutation.handler
       Runtime: nodejs18.x
@@ -150,48 +104,8 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt DomainPermutationsQueue.QueueName
 
-  # RustPutFunction:
-  #   Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-  #   Metadata:
-  #     BuildMethod: rust-cargolambda # More info about Cargo Lambda: https://github.com/cargo-lambda/cargo-lambda
-  #     BuildProperties:
-  #       Binary: add-shorturl
-  #   Properties:
-  #     CodeUri: ./rust-functions   # Points to dir of Cargo.toml
-  #     Handler: bootstrap    # Do not change, as this is the default executable name produced by Cargo Lambda
-  #     Runtime: provided.al2
-  #     Architectures:
-  #       - x86_64
-  #     Events:
-  #       HelloWorld:
-  #         Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-  #         Properties:
-  #           Path: /{id}
-  #           Method: put
-  #     Environment:
-  #       Variables:
-  #         TABLE_NAME: !Ref Table
-  #     Policies:
-  #       - DynamoDBWritePolicy: # More info about SAM policy templates: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-policy-templates.html
-  #           TableName: !Ref Table
-
-  # Simple syntax to create a DynamoDB table with a single attribute primary key, more in
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlesssimpletable
-
-  # DynamoDB table to store item: {id: &lt;ID&gt;, name: &lt;NAME&gt;}
-  # SampleTable:
-  #   Type: AWS::Serverless::SimpleTable
-  #   Properties:
-  #     PrimaryKey:
-  #       Name: id
-  #       Type: String
-  #     ProvisionedThroughput:
-  #       ReadCapacityUnits: 2
-  #       WriteCapacityUnits: 2
-
   # works the incoming queue of scan requests to produce
   # permutations of the domain name into the next queue
-
   DnsResolverFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -265,14 +179,14 @@ Resources:
         WriteCapacityUnits: 2
 
       AttributeDefinitions:
-        - AttributeName: "Domain"
+        - AttributeName: "domain"
           AttributeType: "S"
-        - AttributeName: "Request Date"
+        - AttributeName: "date"
           AttributeType: "S"
       KeySchema:
-        - AttributeName: "Domain"
+        - AttributeName: "domain"
           KeyType: "HASH"
-        - AttributeName: "Request Date"
+        - AttributeName: "date"
           KeyType: "RANGE"
       Tags:
         - Key: foo
@@ -286,14 +200,14 @@ Resources:
         WriteCapacityUnits: 2
 
       AttributeDefinitions:
-        - AttributeName: "Domain"
+        - AttributeName: "domain"
           AttributeType: "S"
-        - AttributeName: "Request Date"
+        - AttributeName: "date"
           AttributeType: "S"
       KeySchema:
-        - AttributeName: "Domain"
+        - AttributeName: "domain"
           KeyType: "HASH"
-        - AttributeName: "Request Date"
+        - AttributeName: "date"
           KeyType: "RANGE"
       Tags:
         - Key: foo

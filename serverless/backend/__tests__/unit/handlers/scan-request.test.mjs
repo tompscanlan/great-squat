@@ -58,9 +58,7 @@ describe('Test scanRequestHandler', function () {
         process.env.SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/433321780850/great-squat-scan-requests";
         const event = {
             httpMethod: 'POST',
-            body: {
-                "domain": "testing.com"
-            }
+            body: "{\"domain\": \"testing.com\"}"
 
         };
         const result = await scanRequestHandler(event);

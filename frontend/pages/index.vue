@@ -33,9 +33,10 @@ const checkForSquatters = () => {
             We'll never know... unless we check. And that's why great squat is here.
 
             Give us a domain name, and we'll check to see what squatters might be out there.
-
         </p>
-
+        <p>
+            <RouterLink to="/requests">See all requests</RouterLink>
+        </p>
         <form class="w-full max-w-sm mt-4">
             <div class="md:flex md:items-center mb-6">
                 <div class="md:w-1/3">

@@ -55,8 +55,8 @@ if (domain == undefined) {
   var params = {
     TableName: tableName,
     Item: {
-      "Domain": domain,
-      "Request Date": Date.now().toString(),
+      "domain": domain,
+      "date": Date.now().toString(),
       "extra": "extra"
     }
   };
@@ -87,15 +87,12 @@ if (domain == undefined) {
       domain: {
         DataType: "String",
         StringValue: domain
-      },
-      date: {
-        DataType: "String",
-        StringValue: Date.now().toString()
       }
     },
     MessageBody: "information containing domains to scan for",
   });
 
+  // send to the queue
   try {
     const resp = await client.send(command);
     console.log("Success - item sent to queue", resp);

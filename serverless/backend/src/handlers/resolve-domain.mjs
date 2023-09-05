@@ -1,9 +1,11 @@
-import dns2 from 'dns2';
+import dns from "dns/promises";
+
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
 
 const RESOLVER_TABLE = process.env.RESOLVER_TABLE;
-
+const dns_resolver = new dns.Resolver();
+dns_resolver.setServers(['8.8.8.8']);
 
 const dnsOptions = {
     // available options
@@ -16,7 +18,7 @@ const marshallOptions = {
     // Whether to automatically convert empty strings, blobs, and sets to `null`.
     convertEmptyValues: false, // false, by default.
     // Whether to remove undefined values while marshalling.
-    removeUndefinedValues: false, // false, by default.
+    removeUndefinedValues: true, // false, by default.
     // Whether to convert typeof object to map attribute.
     convertClassInstanceToMap: true, // false, by default.
 };
@@ -29,86 +31,73 @@ const translateConfig = { marshallOptions, unmarshallOptions };
 
 
 const body = { 'message': 'normal' };
-const response = {
+let response = {
     Records: [],
     statusCode: 200,
     body: body
 };
 
 export async function handler(event, context) {
-
     console.info("event: ", event);
     // console.info("context: ", context);
 
-
     // events coming from sqs are shaped like this.
-    // if event records is an array, then we can process it.
-    if (Array.isArray(event.Records)) {
-
-        // DB prep
-        const client = new DynamoDBClient(
-            // { region: "us-east-1" }
-        );
-        const ddbDocClient = DynamoDBDocument.from(client, translateConfig);
-
-        // dns look ups
-        const dnsresolver = new dns2(dnsOptions);
-
-
-        event.Records.forEach(async record => {
-            // console.info("record: ", record);
-            
-            // for each record, resolve the domain
-            const { domain: domain, body } = record;
-            let db_record = {}
-
-            // could be passed a bad record.
-            // only process if there is a domain
-            if (domain) {
-                console.log("domain: ", domain);
-
-                db_record = {
-                    "Domain": domain,
-                    "Request Date": Date.now().toString(),
-                    resolves: await resolves(dnsresolver, domain)
-                    // "resolves": { "msg": "test" }
-                }
-
-                //DB
-                // let r = await dbSend(client,
-                //     {
-                //         TableName: RESOLVER_TABLE,
-                //         Item: db_record,
-                //     }
-                // );
-                // console.log("DB response: ", r);
-
-            } else {
-                console.log("NO domain in record.");
-                db_record.message = "no domain in record";
-            }
-
-            response.Records.push(db_record);
-        });
-
-        return response;
-    } else {
+    // if event records is not array, then we can't process it.
+    if (!Array.isArray(event.Records)) {
         throw new Error("event.Records is not an array");
     }
+
+    
+    let ddbClient = new DynamoDBClient({});
+    const ddbDocClient = DynamoDBDocumentClient.from(ddbClient, translateConfig);
+
+    for (let i = 0; i < event.Records.length; i++) {
+        let record = event.Records[i];
+        let response_record = record;
+
+        console.log("response record: ", response_record);
+        const { domain, body } = record;
+        if (!domain) {
+            response_record.error = "No domain found in record";
+        }
+        response_record.date = Date.now().toString();
+
+        try {
+            response_record.resolves = await dns_resolver.resolve4(domain);
+        } catch (err) {
+            response_record.resolver_error = err;
+        }
+
+        // DB update with results
+        try {
+            response_record.db_response = await ddbDocClient.send(new PutCommand(
+                {
+                    TableName: RESOLVER_TABLE,
+                    Item: {
+                        "domain": domain,
+                        date: response_record.date,
+                        resolves: response_record.resolves,
+                        resolver_error: response_record.resolver_error,
+                        error: response_record.error,
+                    },
+                }
+            ));
+            console.log("db_response: ", response_record.db_response);
+        } catch (err) {
+            response_record.db_error = err;
+        }
+
+        // record.db_record = db_record;;
+        response.Records.push(response_record);
+    }
+console.log("response: ", response);
+    return response;
 }
 
-async function resolves(dns2, domain) {
+async function resolve_it(dns2, domain) {
     // await new Promise(resolve => {
     //     setTimeout(resolve({ "message": "timed out" }), 500)
     // })
     const result = await dns2.resolveA(domain);
     return result.answers;
 }
-
-const dbSend = async (client, data) => {
-    const command = new PutCommand(data);
-
-    const response = await client.send(command);
-    console.log(response);
-    return response;
-};
