@@ -90,7 +90,7 @@ Resources:
       Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
       Environment:
         Variables:
-          SQS_QUEUE_URL: !GetAtt DnsResolverQueue.QueueUrl
+          SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
       CodeUri: ./serverless/backend/
       Handler: src/handlers/domain-permutation.handler
       Runtime: nodejs18.x
@@ -153,15 +153,15 @@ Resources:
 
   # Holds domains that we want to scan and feeds a function that will
   # check resolution and record results.
-  DnsResolverQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub "${AWS::StackName}-dns-resolver"
-      MessageRetentionPeriod: 172800
-      VisibilityTimeout: 60
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
-        maxReceiveCount: 3
+  # DnsResolverQueue:
+  #   Type: AWS::SQS::Queue
+  #   Properties:
+  #     QueueName: !Sub "${AWS::StackName}-dns-resolver"
+  #     MessageRetentionPeriod: 172800
+  #     VisibilityTimeout: 60
+  #     RedrivePolicy:
+  #       deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+  #       maxReceiveCount: 3
 
 
   # lost messages flow here

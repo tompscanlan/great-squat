@@ -23,7 +23,9 @@ export async function handler(event, context) {
             console.log("SQS_QUEUE_URL:", SQS_QUEUE_URL);
         }
 
-        event.Records.forEach(record => {
+        // event.Records.forEach(record => {
+        for (let i = 0; i < event.Records.length; i++) {
+            let record = event.Records[i];
             const { messageAttributes } = record;
 
             if (!messageAttributes) {
@@ -35,7 +37,10 @@ export async function handler(event, context) {
 
 
             const permutations = generatePermutations(domain);
-            permutations.forEach(async permutation => {
+
+            // permutations.forEach(async permutation => {
+            for (let i = 0; i < permutations.length; i++) {
+                let permutation = permutations[i];
                 console.log("permutation: ", permutation);
                 const params = {
                     QueueUrl: SQS_QUEUE_URL,
@@ -57,9 +62,9 @@ export async function handler(event, context) {
                     console.error("Error sending to queue: ", err);
                     throw err;
                 }
-            });
+            }
 
-        });
+        }
 
         return response;
     } else {
