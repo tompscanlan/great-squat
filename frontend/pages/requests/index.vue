@@ -1,6 +1,6 @@
 
 <script setup lang="ts">
-let main = "https://0c6z8rauv6.execute-api.us-east-1.amazonaws.com/Prod/requests"
+let main = "https://1db01495zg.execute-api.us-east-1.amazonaws.com/Prod/requests"
 
 type record = {
     domain: string,

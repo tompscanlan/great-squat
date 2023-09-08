@@ -1,9 +1,11 @@
 <script setup lang="ts">
-let domain = ref("google.com")
 
-let main = "https://0c6z8rauv6.execute-api.us-east-1.amazonaws.com/Prod"
+let main = "https://1db01495zg.execute-api.us-east-1.amazonaws.com/Prod"
 
-const checkForSquatters = () => {
+let domain = ref("")
+var response  = ref("")
+
+const checkForSquatters = async () => {
     console.log("checking for squatters at ", domain.value)
     // Simple POST request with a JSON body using fetch
     const requestOptions = {
@@ -11,11 +13,20 @@ const checkForSquatters = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: domain.value })
     };
-    fetch(main, requestOptions)
-        .then(response => response.json())
-        .then(data => domain.value = data.domain);
-
+    
+    var r = await fetch(main, requestOptions);
+    response.value = await r.json();
 }
+
+useHead({
+  title: 'Great Squat! - Check for domain typo squatters',
+  meta: [
+    { name: 'description', content: 'A tool for finding malicious or accidental domain squatters with very similar domains to your own.' }
+  ],
+  bodyAttrs: {
+    class: ''
+  }
+})
 
 
 </script>
@@ -63,33 +74,10 @@ const checkForSquatters = () => {
                     </button>
                 </div>
             </div>
+            <div>
+                {{ response }}
+            </div>
         </form>
     </div>
 </template>
   
-  <!-- 
-    
-
-    <form class="w-full max-w-xs">
-        <div class="md:flex md:items-center mb-6">
-
-       
-
-
-            <div class="md:w-1/3">
-                <label class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4" for="inline-full-name">
-                    Domain to Scan
-                </label>
-            </div>
-            <div class="md:w-2/3">
-                <input v-model="domain"
-                    class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
-                    id="inline-full-name" type="text" />
-            </div>
-
-            <input type="text" v-model="domain" />
-            <button @click="checkForSquatters">Check for Squatters</button>
-
-
-
-   -->

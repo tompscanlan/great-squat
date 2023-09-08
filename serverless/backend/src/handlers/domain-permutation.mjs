@@ -37,21 +37,18 @@ export async function handler(event, context) {
 
 
             const permutations = generatePermutations(domain);
-            permutations.push(domain);
+            // permutations.push(domain);
 
             // permutations.forEach(async permutation => {
             for (let i = 0; i < permutations.length; i++) {
                 let permutation = permutations[i];
-                console.log("permutation: ", permutation);
                 const params = {
                     QueueUrl: SQS_QUEUE_URL,
-                    // MessageAttributes: {
-                    //     domain: {
-                    //         DataType: "String",
-                    //         StringValue: permutation
-                    //     }
-                    // },
-                    MessageBody: "{\"domain\": \"" + permutation + "\"}"
+                    MessageBody: JSON.stringify(
+                        {
+                            "domain": permutation,
+                            "related_to": domain
+                        })
                 };
 
                 // send to the queue

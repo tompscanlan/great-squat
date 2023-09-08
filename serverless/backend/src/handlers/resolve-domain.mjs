@@ -1,4 +1,5 @@
 import dns from "dns/promises";
+import util from "util";
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, DynamoDBDocument } from '@aws-sdk/lib-dynamodb';
@@ -75,6 +76,7 @@ export async function handler(event, context) {
                     TableName: RESOLVER_TABLE,
                     Item: {
                         "domain": domain,
+                        "related_to": JSON.parse(body).related_to,
                         date: response_record.date,
                         resolves: response_record.resolves,
                         resolver_error: response_record.resolver_error,
@@ -94,7 +96,7 @@ export async function handler(event, context) {
         // record.db_record = db_record;;
         response.Records.push(response_record);
     }
-    console.log("final response: ", response);
+    console.log("final response: ", util.inspect(response, {showHidden: false, depth: null, colors: false}))
     return response;
 }
 
