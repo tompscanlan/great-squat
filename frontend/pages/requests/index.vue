@@ -1,6 +1,9 @@
 
 <script setup lang="ts">
-let main = "https://1db01495zg.execute-api.us-east-1.amazonaws.com/Prod/requests"
+const config = useRuntimeConfig()
+
+var endpointURL = new URL(config.public.apiUrl + "/requests")
+console.log("endpointURL", endpointURL)
 
 type record = {
     domain: string,
@@ -9,7 +12,7 @@ type record = {
 
 const requests: Ref<record[]> = ref([]);
 
-fetch(main)
+fetch(endpointURL)
     .then(response => response.json())
     .then(data => requests.value = data);
 

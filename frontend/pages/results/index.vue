@@ -1,6 +1,8 @@
-
 <script setup lang="ts">
-let main = "https://1db01495zg.execute-api.us-east-1.amazonaws.com/Prod/results"
+const config = useRuntimeConfig()
+
+var endpointURL = new URL(config.public.apiUrl + "/results")
+console.log("endpointURL", endpointURL)
 
 type record = {
     domain: string,
@@ -9,10 +11,9 @@ type record = {
 
 const requests: Ref<record[]> = ref([]);
 
-fetch(main)
+fetch(endpointURL.href)
     .then(response => response.json())
     .then(data => requests.value = data);
-
 </script>
 
 
@@ -20,8 +21,8 @@ fetch(main)
     <div>
         <h1 class="text-xl font-bold underline m-4">
             Results</h1>
-        
-            <ul>
+
+        <ul>
             <li v-for="request in (requests as record[])" :key="request.domain + request.date">
                 {{ request.domain }} {{ request }}
             </li>

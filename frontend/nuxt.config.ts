@@ -10,4 +10,9 @@ export default defineNuxtConfig({
       autoprefixer: {},
     },
   },
+  runtimeConfig: {
+    public: {
+      apiUrl: process.env.VUE_APP_API_ENDPOINT ?? "http://localhost:3000"
+    }
+  }
 })

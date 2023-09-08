@@ -446,9 +446,9 @@ Resources:
       ValidationMethod: DNS
 
 Outputs:
-  # APIGatewayEndpoint:
-  #   Description: API Gateway endpoint URL for Prod stage
-  #   Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  APIGatewayEndpoint:
+    Description: API Gateway endpoint URL for Prod stage
+    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
   CloudFrontDistributionId:
     Description: CloudFront Distribution ID for hosting web front end
     Value: !Ref CloudFrontDistribution
