@@ -19,9 +19,8 @@ fetch(main)
 
 <template>
     <div>
-        <h1 class="text-3xl font-bold underline">
+        <h1 class="text-xl font-bold underline m-4">
             Requests</h1>
-            <p> <RouterLink to="/" >Home</RouterLink></p>
         <ul>
             <li v-for="request in (requests as  record[])" :key="request.domain + request.date">                
                 {{ request.domain }}  {{  new Date(request.date * 1) }} 

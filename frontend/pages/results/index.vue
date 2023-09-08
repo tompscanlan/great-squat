@@ -13,28 +13,15 @@ fetch(main)
     .then(response => response.json())
     .then(data => requests.value = data);
 
-// Object.assign(state, data)
-
-useHead({
-    title: 'Great Squat! - All Results',
-    meta: [
-        { name: 'description', content: 'A tool for finding malicious or accidental domain squatters with very similar domains to your own.' }
-    ],
-    bodyAttrs: {
-        class: ''
-    }
-})
 </script>
 
 
 <template>
     <div>
-        <h1 class="text-3xl font-bold underline">
+        <h1 class="text-xl font-bold underline m-4">
             Results</h1>
-        <p>
-            <RouterLink to="/">Home</RouterLink>
-        </p>
-        <ul>
+        
+            <ul>
             <li v-for="request in (requests as record[])" :key="request.domain + request.date">
                 {{ request.domain }} {{ request }}
             </li>
