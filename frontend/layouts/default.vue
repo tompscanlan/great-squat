@@ -38,6 +38,12 @@ useHead({
         <main>
             <slot />
         </main>
+
+        
+        <div>
+            <a class="text-blue-600 hover:text-pink-500"
+                href="https://docs.google.com/forms/d/e/1FAIpQLSdIc2xeP1nGFUZD_c8ajEmXsb1_CM8gTYD-iNYVqTm8T9LXMg/viewform?usp=sf_link">Feedback</a>
+        </div>
     </div>
 </template>
   

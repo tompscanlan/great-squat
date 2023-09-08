@@ -29,7 +29,7 @@ export const getAllResultsHandler = async (event) => {
 
     try {
         var params = {
-            IndexName: 'gsiRelatedTo',
+            IndexName: 'gsiAll',
             KeyConditionExpression: 'related_to = :dom',
             ExpressionAttributeValues: {
                 ':dom': domain,

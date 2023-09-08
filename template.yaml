@@ -278,6 +278,15 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 2
             WriteCapacityUnits: 2
+        - IndexName: gsiAll
+          KeySchema:
+            - AttributeName: related_to
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 2
+            WriteCapacityUnits: 2
 
   # S3 Bucket to host single page app website
   WebSiteBucket:

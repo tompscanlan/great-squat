@@ -24,7 +24,7 @@ fetch(endpointURL.href)
 
         <ul>
             <li v-for="request in (requests as record[])" :key="request.domain + request.date">
-                {{ request.domain }} {{ request }}
+                <ResultOutput :domain="request.domain" :request="request"></ResultOutput>
             </li>
         </ul>
     </div>

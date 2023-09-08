@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const route = useRoute()
+const config = useRuntimeConfig()
 
-
-let main = `https://1db01495zg.execute-api.us-east-1.amazonaws.com/Prod/results/${route.params.domain}`
-
+var endpointURL = new URL(config.public.apiUrl + `/results/${route.params.domain}`)
+console.log("endpointURL", endpointURL)
 
 type record = {
     domain: string,
@@ -12,19 +12,23 @@ type record = {
 
 const results: Ref<record[]> = ref([]);
 
-fetch(main)
+fetch(endpointURL)
     .then(response => response.json())
     .then(data => results.value = data);
 
-
-// When accessing /posts/1, route.params.id will be 1
-console.log(route.params.domain)
 </script>
 
 <template>
     <div>
-        <h1>Post {{ route.params.domain }}</h1>
-        <p> {{ results }} </p>
+        <h1>Results for {{ route.params.domain }}</h1>
+        {{ results }}
+          <div>
+            <ul>
+                <li v-for="result in (results as record[])" :key="result.domain + result.date">
+                  <ResultOutput :domain="result.domain" :request="result"></ResultOutput>
+                </li>
+            </ul>
+        </div>
     </div>
 </template>
   
