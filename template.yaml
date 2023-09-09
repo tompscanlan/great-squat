@@ -57,15 +57,38 @@ Resources:
               Ref: ApiGatewayApi
 
 
-  DomainPermutationsFunction:
+  # DomainPermutationsFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
+  #     Environment:
+  #       Variables:
+  #         SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
+  #     CodeUri: ./serverless/backend/
+  #     Handler: src/handlers/domain-permutation.handler
+  #     Runtime: nodejs18.x
+  #     Events:
+  #       MySQSEvent:
+  #         Type: SQS
+  #         Properties:
+  #           Queue: !GetAtt ScanRequestsQueue.Arn
+  #           BatchSize: 1
+  #     Policies:
+  #       - SQSSendMessagePolicy:
+  #           QueueName: !GetAtt DomainPermutationsQueue.QueueName
+
+            
+  DomainPermutationsOpenAiFunction:
     Type: AWS::Serverless::Function
     Properties:
+      Timeout: 60
       Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
       Environment:
         Variables:
           SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
+          OPENAI_API_KEY: '{{resolve:secretsmanager:openai-key:SecretString:OPENAI_KEY}}'
       CodeUri: ./serverless/backend/
-      Handler: src/handlers/domain-permutation.handler
+      Handler: src/handlers/domain-permutation-openai.handler
       Runtime: nodejs18.x
       Events:
         MySQSEvent:

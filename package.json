@@ -1,6 +1,1 @@
-{
-  "dependencies": {
-    "dotenv": "^16.3.1",
-    "vuetify": "^3.3.15"
-  }
-}
+{}

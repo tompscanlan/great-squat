@@ -7,7 +7,8 @@
         "@aws-sdk/client-dynamodb": "^3.188.0",
         "@aws-sdk/client-sqs": "^3.405.0",
         "@aws-sdk/lib-dynamodb": "^3.188.0",
-        "dns2": "^2.1.0"
+        "dns2": "^2.1.0",
+        "openai": "^4.6.0"
     },
     "devDependencies": {
         "aws-sdk-client-mock": "^2.0.0",

@@ -21,8 +21,8 @@ function resultLink(domain:string) {
        <!-- request: {{ request }} -->
 
         <!-- <span v-if="request.resolves"> -->
-            domain:<NuxtLink class="text-blue-600 hover:text-pink-500 m-2" :to="resultLink(request.related_to)">{{request.related_to}}</NuxtLink>
-            related_to:<NuxtLink class="text-blue-600 hover:text-pink-500" :to="resultLink(request.domain)">{{request.domain}}</NuxtLink>
+            related_to:<NuxtLink class="text-blue-600 hover:text-pink-500 m-2" :to="resultLink(request.related_to)">{{request.related_to}}</NuxtLink>
+            domain:<NuxtLink class="text-blue-600 hover:text-pink-500" :to="resultLink(request.domain)">{{request.domain}}</NuxtLink>
             {{ Date(request.date) }}
             {{ request.resolves }}
         <!-- </span> -->
