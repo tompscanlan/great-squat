@@ -9,3 +9,8 @@ Give us a domain name, and we'll check to see what squatters might be out there.
 A larger goal of the project is to share this information for identifying malicious squatter behavior.
 This kind of actor may be engaging in other activities that are illegal and this evidence may
 be beneficial.
+
+
+## Architecture
+
+![Architecture](great-squat.jpg)
