@@ -24,9 +24,13 @@
                     </button>
                 </div>
             </div>
-            <div>
-                {{ response }}
+            <div v-if="response">
+                <NuxtLink :to="resultLink( response )" class="text-blue-600 hover:text-pink-500">Results</NuxtLink>
             </div>
+            <div v-else>
+                No results yet
+        </div>
+
         </form>
     </div>
 </template>
@@ -43,7 +47,6 @@ var response = ref("")
 
 
 const checkForSquatters = async () => {
-    console.log("click")
     console.log("checking for squatters at ", domain.value)
     // Simple POST request with a JSON body using fetch
     const requestOptions = {
@@ -55,4 +58,11 @@ const checkForSquatters = async () => {
     var r = await fetch(endpointURL.href, requestOptions);
     response.value = await r.json();
 }
+
+function resultLink(response: string) {
+    console.log("response", response)
+    let domain = (JSON.parse(response)).domain
+    return "/results/" + domain
+}
+
 </script>

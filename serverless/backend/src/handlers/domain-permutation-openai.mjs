@@ -159,19 +159,18 @@ async function getLatestScan(domain) {
 async function generatePermutationsOpenAI(openai, domain) {
     console.log("open ai permutations on domain: ", domain);
 
-    // const chatCompletion = await openai.chat.completions.create({
-    //     model: "gpt-3.5-turbo",
-    //     messages: [{ role: 'user', content: generatePrompt(domain) }],
-    //     // temperature: 0.6
-    // });
+    const chatCompletion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: 'user', content: generatePrompt(domain) }],
+        // temperature: 0.6
+    });
 
-    // console.log("chatCompletion.choices: ", chatCompletion.choices);
+    console.log("chatCompletion.choices: ", chatCompletion.choices);
 
-    // let domainList = parseDomainsFromText(chatCompletion.choices[0].message.content);
-    // console.log("domainList: ", domainList);
-    // return domainList;
+    let domainList = parseDomainsFromText(chatCompletion.choices[0].message.content);
+    console.log("domainList: ", domainList);
+    return domainList;
 
-    return ['fool.com', 'fool.net', 'fool.org', 'fool.co', 'fool.co.uk', 'fool.co.in', 'fool.co.jp'];
 }
 
 function isValidDomain(domain) {

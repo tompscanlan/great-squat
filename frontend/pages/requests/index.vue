@@ -18,6 +18,16 @@ fetch(endpointURL)
     .then(data => requests.value = data);
 
     // Object.assign(state, data)
+
+function resultLink(domain: string) {
+    return "/results/" + domain
+}
+
+function sortedRequests() : record[] {
+    return requests.value.sort((a, b) => {
+        return b.date - a.date
+    })
+}
 </script>
 
 
@@ -26,8 +36,8 @@ fetch(endpointURL)
         <h1 class="text-xl font-bold underline m-4">
             Requests</h1>
         <ul>
-            <li v-for="request in (requests as  record[])" :key="request.domain + request.date">                
-                {{ request.domain }} {{ request.permutations_generated }} {{  new Date(request.date * 1).toLocaleString() }} 
+            <li v-for="request in (sortedRequests() as  record[])" :key="request.domain + request.date">                
+                <NuxtLink :to=resultLink(request.domain) class="text-blue-600 hover:text-pink-500"> {{ request.domain }} </NuxtLink>  {{ request.permutations_generated }} {{  new Date(request.date * 1).toLocaleString() }} 
             </li>
         </ul>
     </div>
