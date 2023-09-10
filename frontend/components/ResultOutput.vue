@@ -11,21 +11,34 @@ defineProps({
     request: Object
 })
 
-function resultLink(domain:string) {
+function resultLink(domain: string) {
     return "/results/" + domain
+}
+
+function domainLink(domain: string) {
+    return "https://" + domain
 }
 </script>
 
 <template>
     <div>
-       <!-- request: {{ request }} -->
+        <!-- request: {{ request }} -->
 
-        <!-- <span v-if="request.resolves"> -->
-            related_to:<NuxtLink class="text-blue-600 hover:text-pink-500 m-2" :to="resultLink(request.related_to)">{{request.related_to}}</NuxtLink>
-            domain:<NuxtLink class="text-blue-600 hover:text-pink-500" :to="resultLink(request.domain)">{{request.domain}}</NuxtLink>
-            {{ Date(request.date) }}
-            {{ request.resolves }}
-        <!-- </span> -->
+        <div v-if="request.resolves">
+        <NuxtLink class="text-blue-600 hover:text-pink-500" :to="resultLink(request.domain)">
+            {{ request.domain }}
+        </NuxtLink>
+
+        <NuxtLink class="text-blue-600 hover:text-pink-500 m-2 text-xs" :to="domainLink(request.domain)" target="_blank">
+link
+</NuxtLink>
+
+    
+        Resolves to {{ request.resolves }}
+
+        Last checked on {{ new Date(request.date*1).toLocaleString() }}
+
+        </div>
 
     </div>
 </template>

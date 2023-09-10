@@ -45,8 +45,8 @@ Resources:
             QueueName: !GetAtt ScanRequestsQueue.QueueName      
       Environment:
         Variables:
-          SAMPLE_TABLE: !Ref RequestTable
-          SQS_QUEUE_URL: !GetAtt ScanRequestsQueue.QueueUrl
+          REQUEST_TABLE: !Ref RequestTable
+          REQUEST_SQS_QUEUE_URL: !GetAtt ScanRequestsQueue.QueueUrl
       Events:
         Api:
           Type: Api
@@ -56,28 +56,7 @@ Resources:
             RestApiId:
               Ref: ApiGatewayApi
 
-
-  # DomainPermutationsFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
-  #     Environment:
-  #       Variables:
-  #         SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
-  #     CodeUri: ./serverless/backend/
-  #     Handler: src/handlers/domain-permutation.handler
-  #     Runtime: nodejs18.x
-  #     Events:
-  #       MySQSEvent:
-  #         Type: SQS
-  #         Properties:
-  #           Queue: !GetAtt ScanRequestsQueue.Arn
-  #           BatchSize: 1
-  #     Policies:
-  #       - SQSSendMessagePolicy:
-  #           QueueName: !GetAtt DomainPermutationsQueue.QueueName
-
-            
+  
   DomainPermutationsOpenAiFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -85,7 +64,8 @@ Resources:
       Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
       Environment:
         Variables:
-          SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
+          REQUEST_TABLE: !Ref RequestTable
+          PERMUTATIONS_SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
           OPENAI_API_KEY: '{{resolve:secretsmanager:openai-key:SecretString:OPENAI_KEY}}'
       CodeUri: ./serverless/backend/
       Handler: src/handlers/domain-permutation-openai.handler
@@ -99,6 +79,8 @@ Resources:
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt DomainPermutationsQueue.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RequestTable
 
   # works the incoming queue of scan requests to produce
   # permutations of the domain name into the next queue
@@ -230,18 +212,6 @@ Resources:
         deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
         maxReceiveCount: 3
 
-  # Holds domains that we want to scan and feeds a function that will
-  # check resolution and record results.
-  # DnsResolverQueue:
-  #   Type: AWS::SQS::Queue
-  #   Properties:
-  #     QueueName: !Sub "${AWS::StackName}-dns-resolver"
-  #     MessageRetentionPeriod: 172800
-  #     VisibilityTimeout: 60
-  #     RedrivePolicy:
-  #       deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
-  #       maxReceiveCount: 3
-
 
   # lost messages flow here
   DeadLetterQueue:
@@ -301,6 +271,7 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 2
             WriteCapacityUnits: 2
+
         - IndexName: gsiAll
           KeySchema:
             - AttributeName: related_to

@@ -24,7 +24,7 @@ export const getAllResultsHandler = async (event) => {
 
 
     var result = undefined;
-    let ddbClient = new DynamoDBClient({});    // Use default values for DynamoDB endpoint
+    let ddbClient = new DynamoDBClient({});
     const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 
     try {

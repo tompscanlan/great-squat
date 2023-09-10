@@ -20,7 +20,7 @@ fetch(endpointURL)
 
 <template>
     <div>
-        <h1>Results for {{ route.params.domain }}</h1>
+        <h1 class="text-2xl">Results for {{ route.params.domain }}</h1>
           <div>
             <ul>
                 <li v-for="result in (results as record[])" :key="result.domain + result.date">

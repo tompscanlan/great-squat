@@ -7,7 +7,8 @@ console.log("endpointURL", endpointURL)
 
 type record = {
     domain: string,
-    date: string
+    date: string,
+    permutations_generated: number,
 }
 
 const requests: Ref<record[]> = ref([]);
@@ -26,7 +27,7 @@ fetch(endpointURL)
             Requests</h1>
         <ul>
             <li v-for="request in (requests as  record[])" :key="request.domain + request.date">                
-                {{ request.domain }}  {{  new Date(request.date * 1) }} 
+                {{ request.domain }} {{ request.permutations_generated }} {{  new Date(request.date * 1).toLocaleString() }} 
             </li>
         </ul>
     </div>

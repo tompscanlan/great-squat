@@ -7,8 +7,18 @@ import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 let ddbClient = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
 
-// Get the DynamoDB table name from environment variable
-const tableName = process.env.SAMPLE_TABLE;
+// Get the services names from environment variable
+const tableName = process.env.REQUEST_TABLE;
+const REQUEST_SQS_QUEUE_URL = process.env.REQUEST_SQS_QUEUE_URL;
+
+if (!tableName) {
+  bail(500, "No REQUEST_TABLE")
+}
+if (!REQUEST_SQS_QUEUE_URL) {
+  bail(500, "No REQUEST_SQS_QUEUE_URL")
+}
+
+
 
 function bail(statusCode, message) {
   return {
@@ -31,7 +41,7 @@ export const scanRequestHandler = async (event) => {
   let domain = undefined
   console.log("event:", event)
   try {
-  
+
     // body = event.body
     if (event.domain) {
       domain = event.domain
@@ -46,11 +56,23 @@ export const scanRequestHandler = async (event) => {
   }
 
   console.log("domain: ", domain);
-if (domain == undefined) { 
-  return bail(500, "no domain found")
+  if (domain == undefined) {
+    return bail(500, "no domain found")
 
-}
+  }
 
+//   {
+//     "IndexName": "index",
+//     "KeyConditionExpression": "pk = :pk",
+//     "ExpressionAttributeValues": {
+//         ":pk": {
+//             "S": "order_B"
+//         }
+//     },
+//     "Limit": "1",
+//     "ScanIndexForward": false,
+//     "TableName": "Application"
+// }
   // write the domain to the DB
   var params = {
     TableName: tableName,
@@ -70,19 +92,12 @@ if (domain == undefined) {
   }
   console.log("data: ", data);
 
-  // Get the SQS queue name from environment variable
-  const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL;
-  if (!SQS_QUEUE_URL) {
-    return bail(500, "No SQS_QUEUE_URL")
-  }
-  console.log("SQS_QUEUE_URL:", SQS_QUEUE_URL);
 
 
   //Write the domain to a queue
   const client = new SQSClient({});
   const command = new SendMessageCommand({
-    QueueUrl: SQS_QUEUE_URL,
-    DelaySeconds: 10,
+    QueueUrl: REQUEST_SQS_QUEUE_URL,
     MessageAttributes: {
       domain: {
         DataType: "String",
