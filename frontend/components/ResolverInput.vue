@@ -8,7 +8,7 @@
                     </label>
                 </div>
                 <div class="md:w-2/3">
-                    <input v-model="domain"
+                    <input v-model="domainStore.latest.domain"
                         class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500"
                         id="inline-full-name" type="text">
                 </div>
@@ -24,45 +24,41 @@
                     </button>
                 </div>
             </div>
-            <div v-if="response">
-                <NuxtLink :to="resultLink( response )" class="text-blue-600 hover:text-pink-500">Results</NuxtLink>
-            </div>
-            <div v-else>
-                No results yet
-        </div>
 
         </form>
     </div>
 </template>
 
+
 <script setup lang="ts">
+import {useDomainStore, Record} from "../store/domain"
+
+const domainStore = useDomainStore();
 const config = useRuntimeConfig()
 
 var endpointURL = new URL(config.public.apiUrl)
 console.log("endpointURL", endpointURL)
 
-let domain = ref("")
-var response = ref("")
+var response = ref({} as Record)
 
 
-
-const checkForSquatters = async () => {
-    console.log("checking for squatters at ", domain.value)
-    // Simple POST request with a JSON body using fetch
-    const requestOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: domain.value })
-    };
-
-    var r = await fetch(endpointURL.href, requestOptions);
-    response.value = await r.json();
-}
-
-function resultLink(response: string) {
-    console.log("response", response)
-    let domain = (JSON.parse(response)).domain
+function resultLink(domain: string) {
     return "/results/" + domain
 }
+
+    const checkForSquatters = async () => {
+        console.log("checking for squatters at ", domainStore.latest.domain)
+        // Simple POST request with a JSON body using fetch
+        const requestOptions = {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ domain: domainStore.latest.domain })
+        };
+
+        fetch(endpointURL, requestOptions)
+            .then(response => {response.json(); console.log("response", response)})
+            .then(data => response.value = JSON.parse(data));
+        
+    }
 
 </script>

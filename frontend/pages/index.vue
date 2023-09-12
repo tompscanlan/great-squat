@@ -20,6 +20,8 @@
 
         <ResolverInput></ResolverInput>
 
+        <RequestProgress></RequestProgress>
+
     </div>
 </template>
   

@@ -3,6 +3,7 @@
     "description": "delete-test-01-description",
     "version": "0.0.1",
     "private": true,
+    "type": "module",
     "dependencies": {
         "@aws-sdk/client-dynamodb": "^3.188.0",
         "@aws-sdk/client-sqs": "^3.405.0",

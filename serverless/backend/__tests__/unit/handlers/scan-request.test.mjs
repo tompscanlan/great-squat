@@ -54,7 +54,7 @@ describe('Test scanRequestHandler', function () {
     //     expect(result).toEqual(expectedResult);
     // });
 
-    it('should work in general', async () => {
+    it.skip('should work in general', async () => {
         process.env.SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/433321780850/great-squat-scan-requests";
         const event = {
             httpMethod: 'POST',

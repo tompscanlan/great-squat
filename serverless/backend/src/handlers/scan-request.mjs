@@ -2,7 +2,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
-
+import { bail } from '../lib.js';
 
 let ddbClient = new DynamoDBClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(ddbClient);
@@ -16,20 +16,6 @@ if (!tableName) {
 }
 if (!REQUEST_SQS_QUEUE_URL) {
   bail(500, "No REQUEST_SQS_QUEUE_URL")
-}
-
-
-
-function bail(statusCode, message) {
-  return {
-    statusCode: statusCode,
-    headers: {
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
-    },
-    body: JSON.stringify(message)
-  };
 }
 
 export const scanRequestHandler = async (event) => {

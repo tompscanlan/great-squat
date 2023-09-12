@@ -3,6 +3,9 @@ export default defineNuxtConfig({
   css: [
     '@/assets/css/main.css',
   ],
+  modules: [
+    '@pinia/nuxt',
+  ],
   devtools: { enabled: true },
   postcss: {
     plugins: {

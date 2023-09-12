@@ -131,6 +131,34 @@ Resources:
             RestApiId:
               Ref: ApiGatewayApi
 
+  GetLatestRequestByDomain:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./serverless/backend/
+      Handler: src/handlers/get-latest-request-by-domain.getHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 5
+      Description:
+        Get the most recent request for the given domain
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RequestTable
+      Environment:
+        Variables:
+          REQUEST_TABLE: !Ref RequestTable
+      Events:
+        Api:
+          Type: Api 
+          Properties:
+            Path: /request/{domain}
+            Method: GET
+            RestApiId:
+              Ref: ApiGatewayApi
+
+
 
   GetAllResults:
     Type: AWS::Serverless::Function
