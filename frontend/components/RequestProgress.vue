@@ -4,11 +4,17 @@
         </h1>
 
         Domain is {{ domainStore.latest.domain }}
-        Number of Permutations Generated: {{ domainStore.latest.permutations_generated }}
+        Number of Permutations Generated: {{ requestsStore.getLatestScanRequest(domainStore.latest.domain).then( r=> 
+        r.permutations_generated) }}
         
         Requests: {{ requestsStore.requests.length }}
 
-        Results: {{ resultsStore.results.length }}
+        <div v-if="domainStore.latest.domain">
+
+            Results: {{ resultsStore.resultsForDomain(domainStore.latest.domain) }}
+        </div>
+
+        <!-- {{ resultsStore.resultsForDomain }} -->
 
         <!-- <NuxtLink :to="requestLink(domainStore.latest.domain)" class="text-blue-600 hover:text-pink-500">Results</NuxtLink> -->
 
@@ -26,6 +32,7 @@ const requestsStore = useRequestsStore();
 const resultsStore = useResultsStore();
 const config = useRuntimeConfig()
 
+
 // function requestLink(domain: string) {
 //     return "/requests/" + domain
 // }
@@ -36,6 +43,8 @@ onMounted(() => {
     requestsStore.getRequests();
     resultsStore.setEndpointURL(new URL(config.public.apiUrl + "/results"))
     resultsStore.getResults();
+
+
 })
 
 </script>

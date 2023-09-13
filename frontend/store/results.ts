@@ -15,6 +15,10 @@ export const useResultsStore = defineStore(STORAGE_KEY, () => {
 
     const endpointURL = ref(new URL("http://localhost:3000/results"))
 
+    function resultsForDomain(domain: string): ScanResult[] {
+        return results.value.filter((r: ScanResult) => r.domain == domain)
+    }
+
     async function getResults(): Promise<ScanResult[]> {
         console.log("useResultsStore.getResults:", endpointURL)
         return fetch(endpointURL.value)
@@ -42,6 +46,7 @@ export const useResultsStore = defineStore(STORAGE_KEY, () => {
         results,
         getResults,
         setEndpointURL,
-        getLatestScanResult
+        getLatestScanResult,
+        resultsForDomain,
     }
 });
