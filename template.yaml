@@ -9,278 +9,6 @@ Transform:
 # Resources declares the AWS resources that you want to include in the stack
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is an API gateway associated with the getByIdFunction and putItemFunctions
-  ApiGatewayApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      Cors:
-        AllowMethods: "'OPTIONS, POST, GET'"
-        AllowHeaders: "'Content-Type'"
-        AllowOrigin: "'*'" 
-
-## Entry into the system from the web
-#  Receives ScanRequests from the web, 
-#  records them to db and the ScanRequestsQueue
-  ScanRequestFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/scan-request.scanRequestHandler
-      Runtime: nodejs18.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 5
-      Description:
-        Receives ScanRequests from the web, and deposits them into a queue and a record in the db
-      Policies:
-        # Give Create/Read/Update/Delete Permissions to the RequestTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref RequestTable
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt ScanRequestsQueue.QueueName      
-      Environment:
-        Variables:
-          REQUEST_TABLE: !Ref RequestTable
-          REQUEST_SQS_QUEUE_URL: !GetAtt ScanRequestsQueue.QueueUrl
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /
-            Method: POST
-            RestApiId:
-              Ref: ApiGatewayApi
-
-  
-  DomainPermutationsOpenAiFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Timeout: 60
-      Description: Is triggered by the ScanRequestsQueue and produces permutations of the domain name into the DomainPermutationsQueue
-      Environment:
-        Variables:
-          REQUEST_TABLE: !Ref RequestTable
-          PERMUTATIONS_SQS_QUEUE_URL: !GetAtt DomainPermutationsQueue.QueueUrl
-          OPENAI_API_KEY: '{{resolve:secretsmanager:openai-key:SecretString:OPENAI_KEY}}'
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/domain-permutation-openai.handler
-      Runtime: nodejs18.x
-      Events:
-        MySQSEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt ScanRequestsQueue.Arn
-            BatchSize: 1
-      Policies:
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt DomainPermutationsQueue.QueueName
-        - DynamoDBCrudPolicy:
-            TableName: !Ref RequestTable
-
-  # works the incoming queue of scan requests to produce
-  # permutations of the domain name into the next queue
-  DnsResolverFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/resolve-domain.handler
-      Runtime: nodejs18.x
-      Description: Is triggered by the DomainPermutationsQueue and resolves the domain name into the the DB
-      Environment:
-        Variables:
-          RESOLVER_TABLE: !Ref ResolutionTable
-      Events:
-        MySQSEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt DomainPermutationsQueue.Arn
-            BatchSize: 1
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref ResolutionTable
-
-  GetAllRequests:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/get-all-requests.getAllRequestsHandler
-      Runtime: nodejs18.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 5
-      Description:
-        Get all requests from the requests table for use in the web UI
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref RequestTable
-      Environment:
-        Variables:
-          REQUEST_TABLE: !Ref RequestTable
-      Events:
-        Api:
-          Type: Api 
-          Properties:
-            Path: /requests
-            Method: GET
-            RestApiId:
-              Ref: ApiGatewayApi
-
-
-  GetAllResults:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/get-all-results.getAllResultsHandler
-      Runtime: nodejs18.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 5
-      Description:
-        Get all requests from the requests table for use in the web UI
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref ResolutionTable
-      Environment:
-        Variables:
-          REQUEST_TABLE: !Ref ResolutionTable
-      Events:
-        Api:
-          Type: Api 
-          Properties:
-            Path: /results
-            Method: GET
-            RestApiId:
-              Ref: ApiGatewayApi
-
-  GetAllResultsByDomain:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./serverless/backend/
-      Handler: src/handlers/get-all-results-by-domain.getAllResultsHandler
-      Runtime: nodejs18.x
-      Architectures:
-        - x86_64
-      MemorySize: 128
-      Timeout: 5
-      Description:
-        Get all requests from the requests table for use in the web UI
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref ResolutionTable
-      Environment:
-        Variables:
-          REQUEST_TABLE: !Ref ResolutionTable
-      Events:
-        Api:
-          Type: Api 
-          Properties:
-            Path: /results/{domain}
-            Method: GET
-            RestApiId:
-              Ref: ApiGatewayApi
-
-
-
-  # Holds incoming scan requests until they can be processed
-  # for permutations or scanned directly
-  ScanRequestsQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub "${AWS::StackName}-scan-requests"
-      MessageRetentionPeriod: 172800
-      VisibilityTimeout: 60
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
-        maxReceiveCount: 3
-
-  #  holds all permutations of domains that might exist
-  # in preparation for them to be scanned
-  DomainPermutationsQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub "${AWS::StackName}-domain-permutations"
-      MessageRetentionPeriod: 172800
-      VisibilityTimeout: 60
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
-        maxReceiveCount: 3
-
-
-  # lost messages flow here
-  DeadLetterQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      QueueName: !Sub "${AWS::StackName}-dead-letter"
-      MessageRetentionPeriod: 1209600
-
-  RequestTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      ProvisionedThroughput:
-        ReadCapacityUnits: 2
-        WriteCapacityUnits: 2
-
-      AttributeDefinitions:
-        - AttributeName: "domain"
-          AttributeType: "S"
-        - AttributeName: "date"
-          AttributeType: "S"
-      KeySchema:
-        - AttributeName: "domain"
-          KeyType: "HASH"
-        - AttributeName: "date"
-          KeyType: "RANGE"
-      Tags:
-        - Key: foo
-          Value: bar
-
-  ResolutionTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      ProvisionedThroughput:
-        ReadCapacityUnits: 2
-        WriteCapacityUnits: 2
-
-      AttributeDefinitions:
-        - AttributeName: "domain"
-          AttributeType: "S"
-        - AttributeName: "related_to"
-          AttributeType: "S"
-      KeySchema:
-        - AttributeName: "domain"
-          KeyType: "HASH"
-        - AttributeName: "related_to"
-          KeyType: "RANGE"
-
-      GlobalSecondaryIndexes:
-        - IndexName: gsiRelatedTo
-          KeySchema:
-            - AttributeName: related_to
-              KeyType: HASH
-          Projection:
-            ProjectionType: INCLUDE
-            NonKeyAttributes:
-              - domain
-          ProvisionedThroughput:
-            ReadCapacityUnits: 2
-            WriteCapacityUnits: 2
-
-        - IndexName: gsiAll
-          KeySchema:
-            - AttributeName: related_to
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-          ProvisionedThroughput:
-            ReadCapacityUnits: 2
-            WriteCapacityUnits: 2
 
   # S3 Bucket to host single page app website
   WebSiteBucket:
@@ -405,20 +133,6 @@ Resources:
         Runtime: cloudfront-js-1.0
       Name: !Sub "${AWS::StackName}-redirectFunction"
 
-  ApplicationResourceGroup:
-    Type: AWS::ResourceGroups::Group
-    Properties:
-      Name:
-        Fn::Sub: "ApplicationInsights-SAM-${AWS::StackName}"
-      ResourceQuery:
-        Type: CLOUDFORMATION_STACK_1_0
-
-  ApplicationInsightsMonitoring:
-    Type: AWS::ApplicationInsights::Application
-    Properties:
-      ResourceGroupName:
-        Ref: ApplicationResourceGroup
-      AutoConfigurationEnabled: "true"
 
   # HostedZone: 
   #   Type: "AWS::Route53::HostedZone"
@@ -436,7 +150,8 @@ Resources:
   #     - Name: greatsquat.com
   #       Type: A
   #       AliasTarget:
-  #         HostedZoneId: !Ref HostedZone
+  #         # HostedZoneId: !Ref HostedZone
+  #         HostedZoneId: Z03886143SNIJLFXJHVX0
   #         DNSName: !GetAtt CloudFrontDistribution.DomainName
 
   ACMCertificate: 
@@ -449,9 +164,6 @@ Resources:
       ValidationMethod: DNS
 
 Outputs:
-  APIGatewayEndpoint:
-    Description: API Gateway endpoint URL for Prod stage
-    Value: !Sub "https://${ApiGatewayApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
   CloudFrontDistributionId:
     Description: CloudFront Distribution ID for hosting web front end
     Value: !Ref CloudFrontDistribution
@@ -461,7 +173,6 @@ Outputs:
   WebS3BucketName:
     Description: S3 Bucket for hosting web frontend
     Value: !Ref WebSiteBucket
-# # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 
 Globals:
   Function:
